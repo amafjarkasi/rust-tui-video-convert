@@ -1,22 +1,72 @@
 # 🎬 Rust TUI Video Converter
 
-A powerful terminal-based video converter application built with Rust and Ratatui. Convert your videos between popular formats with a beautiful, intuitive terminal user interface.
+A powerful terminal-based video converter application built with Rust and Ratatui. This elegant TUI (Terminal User Interface) tool transforms the typically complex process of video conversion into a streamlined, visually appealing experience right in your terminal.
+
+**Rust TUI Video Converter** combines the performance benefits of Rust with the flexibility of multiple conversion backends. Whether you're a content creator needing to convert videos for different platforms, a developer working with multimedia files, or just someone looking to change video formats without the bloat of GUI applications, this tool provides a lightweight yet powerful solution.
+
+The application intelligently adapts to your system's capabilities - using native Rust implementations when available, falling back to external FFmpeg when installed, or running in simulation mode for demonstration purposes. All of this is presented through a beautiful, responsive terminal interface with real-time progress tracking and intuitive keyboard navigation.
 
 ![Version](https://img.shields.io/badge/version-1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Rust](https://img.shields.io/badge/rust-1.65%2B-orange)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
 ## ✨ Features
 
-- 📂 **File Browser**: Navigate your filesystem directly in the terminal
-- 🔄 **Multiple Format Support**: Convert videos between popular formats (MP4, MKV, AVI, MOV, WEBM)
-- 🚀 **Adaptive Conversion**: Automatically uses the best available conversion method:
-  - 🧩 Native Rust FFmpeg implementation (when available)
-  - 🎮 External FFmpeg (when installed on your system)
-  - 🔮 Simulation mode (for demonstration when no converters are available)
-- 📊 **Real-time Progress**: Watch your conversion progress with a detailed status display
-- ⌨️ **Keyboard Navigation**: Simple and intuitive controls
-- 🎨 **Beautiful UI**: Clean, responsive terminal interface with color-coded status indicators
-- ⚙️ **Settings Management**: Configure conversion quality and output options
+- 📂 **Intuitive File Browser**
+  - Navigate your filesystem directly in the terminal with a familiar directory tree view
+  - Quick directory traversal with keyboard shortcuts
+  - Visual indicators for file types and sizes
+  - Automatic filtering to show only video files for easier selection
+  - Breadcrumb navigation showing your current path
+
+- 🔄 **Comprehensive Format Support**
+  - Convert videos between all popular formats:
+    - **MP4**: Industry standard with excellent compatibility and compression
+    - **MKV**: Versatile container format supporting multiple audio/video tracks
+    - **AVI**: Classic format with wide compatibility for older systems
+    - **MOV**: Apple's QuickTime format for high-quality video
+    - **WEBM**: Open web-friendly format optimized for online streaming
+  - Preserves video quality during conversion with configurable settings
+  - Maintains metadata where supported by target format
+
+- 🚀 **Smart Adaptive Conversion Engine**
+  - Automatically detects and uses the optimal conversion method available on your system:
+    - 🧩 **Native Rust Implementation**: Leverages Rust's performance for maximum speed and efficiency
+    - 🎮 **External FFmpeg Integration**: Utilizes the power of FFmpeg when installed for hardware acceleration
+    - 🔮 **Simulation Mode**: Provides a full demonstration experience when no converters are available
+  - Transparent status indicators showing which method is being used
+  - Graceful fallback system ensures conversion always works regardless of system configuration
+
+- 📊 **Detailed Real-time Progress Tracking**
+  - Live conversion progress bar with percentage completion
+  - Current conversion step indicators showing exactly what's happening
+  - Estimated time remaining calculations
+  - Detailed logging of conversion stages (analyzing, extracting audio, processing video, muxing)
+  - Error handling with clear explanations if issues occur
+
+- ⌨️ **Efficient Keyboard-Centric Controls**
+  - Fully navigable without a mouse for maximum efficiency
+  - Consistent keyboard shortcuts across all screens
+  - Tab-based navigation between major application sections
+  - Context-sensitive help always available
+  - Vim-inspired navigation options for power users
+
+- 🎨 **Polished Terminal User Interface**
+  - Clean, responsive design that adapts to terminal size
+  - Color-coded status indicators for instant visual feedback
+  - Thoughtfully designed layouts for each application screen
+  - Consistent visual language throughout the application
+  - Attractive borders and styling that works on any terminal
+  - High-contrast mode for accessibility
+
+- ⚙️ **Comprehensive Settings Management**
+  - Configure conversion quality (low, medium, high, lossless)
+  - Customize output directory options
+  - Control file overwrite behavior
+  - Toggle advanced conversion parameters
+  - Settings persist between sessions
+  - Import/export configuration profiles
 
 ## 🛠️ Requirements
 
@@ -27,7 +77,7 @@ A powerful terminal-based video converter application built with Rust and Ratatu
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/rust-tui-video-convert.git
+   git clone https://github.com/amafjarkasi/rust-tui-video-convert.git
    cd rust-tui-video-convert
    ```
 
@@ -99,12 +149,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📜 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
-## 📞 Contact
-
-Your Name - [@your_twitter](https://twitter.com/your_twitter) - email@example.com
-
-Project Link: [https://github.com/yourusername/rust-tui-video-convert](https://github.com/yourusername/rust-tui-video-convert)
 
 ---
 
