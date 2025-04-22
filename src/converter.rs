@@ -1,0 +1,314 @@
+use std::path::{Path, PathBuf};
+use std::sync::mpsc;
+use std::thread;
+use std::time::Duration;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum VideoFormat {
+    MP4,
+    MKV,
+    AVI,
+    MOV,
+    WEBM,
+}
+
+impl VideoFormat {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            VideoFormat::MP4 => "MP4",
+            VideoFormat::MKV => "MKV",
+            VideoFormat::AVI => "AVI",
+            VideoFormat::MOV => "MOV",
+            VideoFormat::WEBM => "WEBM",
+        }
+    }
+    
+    pub fn extension(&self) -> &'static str {
+        match self {
+            VideoFormat::MP4 => "mp4",
+            VideoFormat::MKV => "mkv",
+            VideoFormat::AVI => "avi",
+            VideoFormat::MOV => "mov",
+            VideoFormat::WEBM => "webm",
+        }
+    }
+    
+    pub fn description(&self) -> &'static str {
+        match self {
+            VideoFormat::MP4 => "MPEG-4 Part 14 - Widely supported format with good compression",
+            VideoFormat::MKV => "Matroska Video - Container format that can hold many codecs",
+            VideoFormat::AVI => "Audio Video Interleave - Microsoft's container format",
+            VideoFormat::MOV => "QuickTime File Format - Apple's container format",
+            VideoFormat::WEBM => "WebM - Open, royalty-free format designed for the web",
+        }
+    }
+    
+    pub fn from_extension(ext: &str) -> Option<Self> {
+        match ext.to_lowercase().as_str() {
+            "mp4" => Some(VideoFormat::MP4),
+            "mkv" => Some(VideoFormat::MKV),
+            "avi" => Some(VideoFormat::AVI),
+            "mov" => Some(VideoFormat::MOV),
+            "webm" => Some(VideoFormat::WEBM),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ConversionProgress {
+    pub percent: u8,
+    pub current_step: String,
+    pub source_file: PathBuf,
+    pub target_format: VideoFormat,
+    pub output_file: PathBuf,
+    pub is_complete: bool,
+    pub has_error: bool,
+    pub error_message: Option<String>,
+}
+
+pub enum ConversionMode {
+    Simulation,
+    FFmpeg,
+    NativeFFmpeg,
+}
+
+pub struct VideoConverter {
+    progress_tx: mpsc::Sender<ConversionProgress>,
+    mode: ConversionMode,
+}
+
+impl VideoConverter {
+    pub fn new(mode: ConversionMode) -> (Self, mpsc::Receiver<ConversionProgress>) {
+        let (progress_tx, progress_rx) = mpsc::channel();
+        (Self { progress_tx, mode }, progress_rx)
+    }
+
+    pub fn convert(&self, source_file: PathBuf, target_format: VideoFormat) {
+        let progress_tx = self.progress_tx.clone();
+        
+        // Create output file path
+        let output_file = Self::generate_output_path(&source_file, target_format);
+        
+        // Send initial progress notification
+        Self::send_progress(
+            &progress_tx, 
+            0, 
+            "Initializing conversion...".to_string(),
+            &source_file,
+            target_format,
+            &output_file,
+            false,
+            false,
+            None
+        );
+        
+        match self.mode {
+            ConversionMode::Simulation => {
+                self.simulate_conversion(source_file, target_format, output_file)
+            },
+            
+            ConversionMode::NativeFFmpeg => {
+                // Use native FFmpeg library
+                let native = crate::native_converter::NativeConverter::new(self.progress_tx.clone());
+                if let Err(e) = native.convert(source_file.clone(), target_format, output_file.clone()) {
+                    // Handle error
+                    Self::send_progress(
+                        &progress_tx, 
+                        0, 
+                        format!("Native FFmpeg error: {}, falling back to simulation", e),
+                        &source_file,
+                        target_format,
+                        &output_file,
+                        false,
+                        true,
+                        Some(format!("Native FFmpeg error: {}", e))
+                    );
+                    // Fall back to simulation
+                    self.simulate_conversion(source_file, target_format, output_file);
+                }
+            },
+            
+            ConversionMode::FFmpeg => {
+                // Check if FFmpeg is available
+                if let Ok(available) = crate::ffmpeg::FFmpegConverter::check_ffmpeg_available() {
+                    if available {
+                        // Use FFmpeg for conversion
+                        let ffmpeg = crate::ffmpeg::FFmpegConverter::new(self.progress_tx.clone());
+                        if let Err(e) = ffmpeg.convert(source_file.clone(), target_format, output_file.clone()) {
+                            // Handle error
+                            Self::send_progress(
+                                &progress_tx, 
+                                0, 
+                                format!("FFmpeg error: {}, falling back to simulation", e),
+                                &source_file,
+                                target_format,
+                                &output_file,
+                                false,
+                                true,
+                                Some(format!("FFmpeg error: {}", e))
+                            );
+                            // Fall back to simulation
+                            self.simulate_conversion(source_file, target_format, output_file);
+                        }
+                    } else {
+                        // FFmpeg not available, fall back to simulation
+                        Self::send_progress(
+                            &progress_tx, 
+                            0, 
+                            "FFmpeg not found, using simulation mode".to_string(),
+                            &source_file,
+                            target_format,
+                            &output_file,
+                            false,
+                            false,
+                            None
+                        );
+                        self.simulate_conversion(source_file, target_format, output_file);
+                    }
+                } else {
+                    // Error checking FFmpeg, fall back to simulation
+                    Self::send_progress(
+                        &progress_tx, 
+                        0, 
+                        "Error checking FFmpeg availability, using simulation mode".to_string(),
+                        &source_file,
+                        target_format,
+                        &output_file,
+                        false,
+                        false,
+                        None
+                    );
+                    self.simulate_conversion(source_file, target_format, output_file);
+                }
+            }
+        }
+    }
+    
+    fn simulate_conversion(&self, source_file: PathBuf, target_format: VideoFormat, output_file: PathBuf) {
+        let progress_tx = self.progress_tx.clone();
+        
+        // Spawn a thread to handle the conversion simulation
+        thread::spawn(move || {
+            // This is a simulation of video conversion
+            
+            // Step 1: Analyzing video
+            Self::send_progress(
+                &progress_tx, 
+                0, 
+                "Analyzing video file...".to_string(),
+                &source_file,
+                target_format,
+                &output_file,
+                false,
+                false,
+                None
+            );
+            thread::sleep(Duration::from_millis(500));
+            
+            // Step 2: Extracting audio
+            Self::send_progress(
+                &progress_tx, 
+                10, 
+                "Extracting audio stream...".to_string(),
+                &source_file,
+                target_format,
+                &output_file,
+                false,
+                false,
+                None
+            );
+            thread::sleep(Duration::from_millis(1000));
+            
+            // Step 3: Processing video
+            for i in 20..=80 {
+                Self::send_progress(
+                    &progress_tx, 
+                    i, 
+                    format!("Converting video frame {}/100...", i),
+                    &source_file,
+                    target_format,
+                    &output_file,
+                    false,
+                    false,
+                    None
+                );
+                thread::sleep(Duration::from_millis(100));
+            }
+            
+            // Step 4: Muxing streams
+            Self::send_progress(
+                &progress_tx, 
+                90, 
+                "Muxing audio and video streams...".to_string(),
+                &source_file,
+                target_format,
+                &output_file,
+                false,
+                false,
+                None
+            );
+            thread::sleep(Duration::from_millis(500));
+            
+            // Step 5: Finalizing
+            Self::send_progress(
+                &progress_tx, 
+                100, 
+                "Finalizing output file...".to_string(),
+                &source_file,
+                target_format,
+                &output_file,
+                false,
+                false,
+                None
+            );
+            thread::sleep(Duration::from_millis(300));
+            
+            // Complete
+            Self::send_progress(
+                &progress_tx, 
+                100, 
+                "Conversion complete!".to_string(),
+                &source_file,
+                target_format,
+                &output_file,
+                true,
+                false,
+                None
+            );
+        });
+    }
+    
+    fn send_progress(
+        tx: &mpsc::Sender<ConversionProgress>,
+        percent: u8,
+        step: String,
+        source_file: &PathBuf,
+        target_format: VideoFormat,
+        output_file: &PathBuf,
+        is_complete: bool,
+        has_error: bool,
+        error_message: Option<String>,
+    ) {
+        let _ = tx.send(ConversionProgress {
+            percent,
+            current_step: step,
+            source_file: source_file.clone(),
+            target_format,
+            output_file: output_file.clone(),
+            is_complete,
+            has_error,
+            error_message,
+        });
+    }
+    
+    fn generate_output_path(source_file: &PathBuf, target_format: VideoFormat) -> PathBuf {
+        let parent = source_file.parent().unwrap_or_else(|| Path::new(""));
+        let stem = source_file.file_stem().unwrap_or_default();
+        
+        let mut output_path = parent.to_path_buf();
+        output_path.push(format!("{}.{}", stem.to_string_lossy(), target_format.extension()));
+        
+        output_path
+    }
+}

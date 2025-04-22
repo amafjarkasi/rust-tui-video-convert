@@ -1,0 +1,13 @@
+[package]
+name = "rust-tui-video-convert"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crossterm = "0.25"
+ratatui = { version = "0.20.0", default-features = false, features = ["crossterm"] }
+walkdir = "2.3.3"
+thiserror = "1.0"
+regex = "1.5"
+tempfile = "3.3"
+byteorder = "1.4.3"
