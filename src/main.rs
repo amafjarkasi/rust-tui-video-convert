@@ -91,6 +91,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         match app.current_tab {
                             AppTab::FileBrowser => app.file_browser.next(),
                             AppTab::FormatSelection => app.next_format(),
+                            AppTab::Settings => app.next_setting(),
                             _ => {}
                         }
                     },
@@ -98,16 +99,27 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         match app.current_tab {
                             AppTab::FileBrowser => app.file_browser.previous(),
                             AppTab::FormatSelection => app.previous_format(),
+                            AppTab::Settings => app.previous_setting(),
                             _ => {}
+                        }
+                    },
+                    // Change setting values
+                    KeyCode::Right => {
+                        match app.current_tab {
+                            AppTab::Settings => app.change_selected_setting(true),
+                            _ => app.next_tab(),
+                        }
+                    },
+                    KeyCode::Left => {
+                        match app.current_tab {
+                            AppTab::Settings => app.change_selected_setting(false),
+                            _ => app.previous_tab(),
                         }
                     },
                     
                     // Tab navigation
-                    KeyCode::Right | KeyCode::Tab => {
+                    KeyCode::Tab => {
                         app.next_tab();
-                    },
-                    KeyCode::Left => {
-                        app.previous_tab();
                     },
                     
                     // Selection / Action
