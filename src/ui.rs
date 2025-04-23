@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, AppTab};
+use crate::app::{App, AppTab, AdvancedSetting};
 use crate::converter::VideoFormat;
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
@@ -36,7 +36,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         AppTab::FormatSelection => render_format_selection(f, app, chunks[2]),
         AppTab::Converting => render_converting(f, app, chunks[2]),
         AppTab::Complete => render_complete(f, app, chunks[2]),
-        AppTab::Settings => render_settings(f, chunks[2]),
+        AppTab::Settings => render_settings(f, app, chunks[2]),
         AppTab::Help => render_help(f, chunks[2]),
     }
     
@@ -236,7 +236,7 @@ fn render_format_selection<B: Backend>(f: &mut Frame<B>, app: &App, area: Rect) 
                 .border_style(Style::default().fg(Color::Blue))
         )
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol("➤ ");
+        .highlight_symbol(" ");
 
     let mut state = ratatui::widgets::ListState::default();
     state.select(Some(app.selected_format_idx));
@@ -260,11 +260,11 @@ fn render_format_selection<B: Backend>(f: &mut Frame<B>, app: &App, area: Rect) 
             Span::styled("Common Use Cases:", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
         ]),
         Spans::from(match current_format {
-            VideoFormat::MP4 => "• Streaming videos online\n• Sharing on social media\n• Compatible with most devices",
-            VideoFormat::MKV => "• High-quality video storage\n• Multiple audio tracks\n• Subtitle support",
-            VideoFormat::AVI => "• Legacy systems\n• Older media players\n• Simple editing workflows",
-            VideoFormat::MOV => "• Apple devices\n• Professional video editing\n• High-quality recording",
-            VideoFormat::WEBM => "• Web embedding\n• HTML5 video\n• Efficient streaming",
+            VideoFormat::MP4 => " Streaming videos online\n Sharing on social media\n Compatible with most devices",
+            VideoFormat::MKV => " High-quality video storage\n Multiple audio tracks\n Subtitle support",
+            VideoFormat::AVI => " Legacy systems\n Older media players\n Simple editing workflows",
+            VideoFormat::MOV => " Apple devices\n Professional video editing\n High-quality recording",
+            VideoFormat::WEBM => " Web embedding\n HTML5 video\n Efficient streaming",
         }),
     ];
 
@@ -355,10 +355,7 @@ fn render_converting<B: Backend>(f: &mut Frame<B>, app: &App, area: Rect) {
         // Conversion method
         let conversion_method = Paragraph::new(Spans::from(vec![
             Span::styled("Conversion Method: ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
-            Span::styled(
-                conversion_tool, 
-                Style::default().fg(tool_color)
-            ),
+            Span::styled(conversion_tool, Style::default().fg(tool_color)),
         ]))
         .block(
             Block::default()
@@ -470,7 +467,7 @@ fn render_complete<B: Backend>(f: &mut Frame<B>, app: &App, area: Rect) {
     }
 }
 
-fn render_settings<B: Backend>(f: &mut Frame<B>, area: Rect) {
+fn render_settings<B: Backend>(f: &mut Frame<B>, app: &App, area: Rect) {
     // Determine which conversion tool is available
     let conversion_tool = match crate::native_converter::NativeConverter::check_available() {
         Ok(true) => "Native Rust FFmpeg",
@@ -480,45 +477,95 @@ fn render_settings<B: Backend>(f: &mut Frame<B>, area: Rect) {
         },
     };
     
-    let settings_text = vec![
-        Spans::from(vec![
-            Span::styled("Settings", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
-        ]),
-        Spans::from(""),
-        Spans::from(vec![
-            Span::styled("• ", Style::default().fg(Color::Yellow)),
-            Span::styled("Conversion Quality: ", Style::default().fg(Color::Green)),
-            Span::styled("High", Style::default().fg(Color::White)),
-        ]),
-        Spans::from(vec![
-            Span::styled("• ", Style::default().fg(Color::Yellow)),
-            Span::styled("Output Directory: ", Style::default().fg(Color::Green)),
-            Span::styled("Same as input", Style::default().fg(Color::White)),
-        ]),
-        Spans::from(vec![
-            Span::styled("• ", Style::default().fg(Color::Yellow)),
-            Span::styled("Overwrite Existing Files: ", Style::default().fg(Color::Green)),
-            Span::styled("Ask", Style::default().fg(Color::White)),
-        ]),
-        Spans::from(vec![
-            Span::styled("• ", Style::default().fg(Color::Yellow)),
-            Span::styled("Conversion Tool: ", Style::default().fg(Color::Green)),
-            Span::styled(conversion_tool, Style::default().fg(Color::White)),
-        ]),
-    ];
-
-    let settings_widget = Paragraph::new(settings_text)
-        .block(
-            Block::default()
-                .title(" Settings ")
-                .title_alignment(Alignment::Center)
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Blue))
-        )
-        .alignment(Alignment::Left);
-
-    f.render_widget(settings_widget, area);
+    // Create layout for settings sections
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Length(3),  // Conversion tool
+            Constraint::Length(1),  // Spacer
+            Constraint::Length(10), // Advanced video settings
+            Constraint::Min(0),     // Future settings
+        ].as_ref())
+        .split(area);
+    
+    // Conversion tool section
+    let tool_block = Block::default()
+        .title(" Conversion Tool ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow));
+    
+    // Calculate inner area before rendering the block
+    let tool_inner = tool_block.inner(chunks[0]);
+    
+    // Render the block first
+    f.render_widget(tool_block, chunks[0]);
+    
+    // Then render the text in the inner area
+    let tool_text = Paragraph::new(conversion_tool)
+        .style(Style::default().fg(Color::Green))
+        .alignment(Alignment::Center);
+    
+    f.render_widget(tool_text, tool_inner);
+    
+    // Advanced video settings section
+    let settings_block = Block::default()
+        .title(" Advanced Video Settings ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow));
+    
+    // Calculate inner area before rendering the block
+    let settings_area = settings_block.inner(chunks[2]);
+    
+    // Render the block
+    f.render_widget(settings_block, chunks[2]);
+    let settings_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Length(1),  // Resolution
+            Constraint::Length(1),  // Bitrate
+            Constraint::Length(1),  // Frame Rate
+            Constraint::Length(1),  // Spacer
+            Constraint::Length(1),  // Instructions
+        ].as_ref())
+        .split(settings_area);
+    
+    // Resolution setting
+    let resolution_text = format!("Resolution: {}", app.video_settings.resolution.as_str());
+    let resolution_style = if app.selected_setting == AdvancedSetting::Resolution {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::White)
+    };
+    let resolution_para = Paragraph::new(resolution_text).style(resolution_style);
+    f.render_widget(resolution_para, settings_layout[0]);
+    
+    // Bitrate setting
+    let bitrate_text = format!("Bitrate: {}", app.video_settings.bitrate.as_str());
+    let bitrate_style = if app.selected_setting == AdvancedSetting::Bitrate {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::White)
+    };
+    let bitrate_para = Paragraph::new(bitrate_text).style(bitrate_style);
+    f.render_widget(bitrate_para, settings_layout[1]);
+    
+    // Frame rate setting
+    let framerate_text = format!("Frame Rate: {}", app.video_settings.frame_rate.as_str());
+    let framerate_style = if app.selected_setting == AdvancedSetting::FrameRate {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::White)
+    };
+    let framerate_para = Paragraph::new(framerate_text).style(framerate_style);
+    f.render_widget(framerate_para, settings_layout[2]);
+    
+    // Instructions
+    let instructions = Paragraph::new("↑/↓: Select setting | ←/→: Change value")
+        .style(Style::default().fg(Color::Gray))
+        .alignment(Alignment::Center);
+    f.render_widget(instructions, settings_layout[4]);
 }
 
 fn render_help<B: Backend>(f: &mut Frame<B>, area: Rect) {
@@ -647,6 +694,22 @@ fn render_popup<B: Backend>(f: &mut Frame<B>, app: &App, area: Rect) {
                 Spans::from(vec![
                     Span::styled("Using: ", Style::default().fg(Color::Green)),
                     Span::styled(conversion_tool, Style::default().fg(tool_color)),
+                ]),
+                Spans::from(""),
+                Spans::from(vec![
+                    Span::styled("Video Settings: ", Style::default().fg(Color::Green)),
+                ]),
+                Spans::from(vec![
+                    Span::styled("  Resolution: ", Style::default().fg(Color::Cyan)),
+                    Span::styled(app.video_settings.resolution.as_str(), Style::default().fg(Color::White)),
+                ]),
+                Spans::from(vec![
+                    Span::styled("  Bitrate: ", Style::default().fg(Color::Cyan)),
+                    Span::styled(app.video_settings.bitrate.as_str(), Style::default().fg(Color::White)),
+                ]),
+                Spans::from(vec![
+                    Span::styled("  Frame Rate: ", Style::default().fg(Color::Cyan)),
+                    Span::styled(app.video_settings.frame_rate.as_str(), Style::default().fg(Color::White)),
                 ]),
                 Spans::from(""),
                 Spans::from("Press Enter to start conversion or Esc to cancel."),

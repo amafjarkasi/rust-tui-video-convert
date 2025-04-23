@@ -13,12 +13,12 @@ The application intelligently adapts to your system's capabilities - using nativ
 
 ## ✨ Features
 
-- 📂 **Intuitive File Browser**
-  - Navigate your filesystem directly in the terminal with a familiar directory tree view
-  - Quick directory traversal with keyboard shortcuts
-  - Visual indicators for file types and sizes
-  - Automatic filtering to show only video files for easier selection
-  - Breadcrumb navigation showing your current path
+- **Intuitive File Browser**: Navigate your filesystem directly in the terminal
+- **Multiple Format Support**: Convert to MP4, MKV, AVI, MOV, and WEBM formats
+- **Advanced Video Settings**: Control resolution, bitrate, and frame rate for your conversions
+- **Adaptive Conversion**: Uses the best available conversion method on your system
+- **Real-time Progress**: Track conversion progress with a visual indicator
+- **Terminal UI**: Beautiful and responsive interface built with Ratatui
 
 - 🔄 **Comprehensive Format Support**
   - Convert videos between all popular formats:
@@ -60,13 +60,13 @@ The application intelligently adapts to your system's capabilities - using nativ
   - Attractive borders and styling that works on any terminal
   - High-contrast mode for accessibility
 
-- ⚙️ **Comprehensive Settings Management**
-  - Configure conversion quality (low, medium, high, lossless)
-  - Customize output directory options
-  - Control file overwrite behavior
-  - Toggle advanced conversion parameters
-  - Settings persist between sessions
-  - Import/export configuration profiles
+- ⚙️ **Advanced Video Settings**
+  - **Resolution Control**: Choose from Original, 720p, 1080p, or 4K output
+  - **Bitrate Management**: Select Auto, Low, Medium, or High quality settings
+  - **Frame Rate Options**: Maintain original FPS or convert to 24, 30, or 60 FPS
+  - **Interactive UI**: Easily adjust settings with keyboard navigation
+  - **Visual Feedback**: Highlighted current selection for better usability
+  - **Settings Preview**: View your configuration in the conversion dialog
 
 ## 🛠️ Requirements
 
@@ -76,17 +76,20 @@ The application intelligently adapts to your system's capabilities - using nativ
 ## 📥 Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/amafjarkasi/rust-tui-video-convert.git
    cd rust-tui-video-convert
    ```
 
 2. Build the application:
+
    ```bash
    cargo build --release
    ```
 
 3. Run the application:
+
    ```bash
    cargo run --release
    ```
@@ -94,17 +97,21 @@ The application intelligently adapts to your system's capabilities - using nativ
 ## 🎮 Usage
 
 ### Navigation
-- `↑`/`↓` or `Tab`: Navigate through files, formats, and tabs
+
+- `↑`/`↓`: Navigate through files, formats, and settings
 - `Enter`: Select a file or format, or start conversion
 - `Tab`: Switch between tabs (File Browser, Format Selection, Settings, Help)
+- `←`/`→`: Change values in Settings or navigate between tabs
 
 ### File Operations
+
 - Navigate to a video file in the File Browser
 - Press `Enter` to select it
 - Choose your desired output format
 - Press `Enter` again to start conversion
 
 ### Conversion Controls
+
 - `p`: Toggle popup information
 - `n`: Start a new conversion after completion
 - `q` or `Esc`: Quit the application or close popups
@@ -124,11 +131,24 @@ The application intelligently adapts to your system's capabilities - using nativ
 The application is built with a modular architecture:
 
 - **UI Layer**: Built with Ratatui for terminal rendering
+  - Responsive layout that adapts to terminal size
+  - Tab-based navigation between application sections
+  - Interactive widgets for user input and feedback
+
 - **Application Logic**: Handles state management and user input
+  - Event-driven design for keyboard interaction
+  - State machine for managing application flow
+  - Efficient data structures for file and format management
+
 - **Conversion Layer**: Supports multiple conversion backends:
-  - Native Rust implementation
-  - External FFmpeg integration
-  - Simulation mode for demonstration
+  - Native Rust implementation for maximum performance
+  - External FFmpeg integration for hardware acceleration
+  - Simulation mode for demonstration purposes
+
+- **Advanced Video Settings**: Configurable options for video conversion:
+  - Resolution: Original, 720p, 1080p, 4K
+  - Bitrate: Auto, Low, Medium, High
+  - Frame Rate: Original, 24fps, 30fps, 60fps
 
 ## 🔧 Dependencies
 
@@ -148,8 +168,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📜 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See LICENSE for more information.
 
 ---
 
-<p align="center">Made with ❤️ in Rust</p>
+Made with ❤️ in Rust

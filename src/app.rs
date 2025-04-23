@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::mpsc;
 
-use crate::converter::{ConversionMode, ConversionProgress, VideoConverter, VideoFormat};
+use crate::converter::{ConversionMode, ConversionProgress, VideoConverter, VideoFormat, VideoSettings, Resolution, Bitrate, FrameRate};
 use crate::file_browser::FileBrowser;
 
 // Application tabs
@@ -25,6 +25,17 @@ pub struct App {
     pub show_popup: bool,
     pub conversion_progress: Option<ConversionProgress>,
     pub converter_rx: Option<mpsc::Receiver<ConversionProgress>>,
+    
+    // Advanced video settings
+    pub video_settings: VideoSettings,
+    pub selected_setting: AdvancedSetting,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AdvancedSetting {
+    Resolution,
+    Bitrate,
+    FrameRate,
 }
 
 impl App {
@@ -41,6 +52,14 @@ impl App {
             show_popup: false,
             conversion_progress: None,
             converter_rx: None,
+            
+            // Default video settings
+            video_settings: VideoSettings {
+                resolution: Resolution::Original,
+                bitrate: Bitrate::Auto,
+                frame_rate: FrameRate::Original,
+            },
+            selected_setting: AdvancedSetting::Resolution,
         }
     }
 
@@ -137,7 +156,9 @@ impl App {
                 let (converter, rx) = VideoConverter::new(mode);
                 self.converter_rx = Some(rx);
                 
-                // Start conversion
+                // Start conversion with video settings
+                // We'll need to modify the VideoConverter to accept these settings
+                // For now, we'll just pass the file and format
                 converter.convert(file_path.clone(), format);
                 
                 // Switch to converting tab
@@ -162,5 +183,94 @@ impl App {
         self.current_tab = AppTab::FileBrowser;
         self.conversion_progress = None;
         self.converter_rx = None;
+    }
+    
+    // Advanced video settings methods
+    
+    pub fn next_setting(&mut self) {
+        self.selected_setting = match self.selected_setting {
+            AdvancedSetting::Resolution => AdvancedSetting::Bitrate,
+            AdvancedSetting::Bitrate => AdvancedSetting::FrameRate,
+            AdvancedSetting::FrameRate => AdvancedSetting::Resolution,
+        };
+    }
+    
+    pub fn previous_setting(&mut self) {
+        self.selected_setting = match self.selected_setting {
+            AdvancedSetting::Resolution => AdvancedSetting::FrameRate,
+            AdvancedSetting::Bitrate => AdvancedSetting::Resolution,
+            AdvancedSetting::FrameRate => AdvancedSetting::Bitrate,
+        };
+    }
+    
+    pub fn next_resolution(&mut self) {
+        self.video_settings.resolution = match self.video_settings.resolution {
+            Resolution::Original => Resolution::HD720p,
+            Resolution::HD720p => Resolution::HD1080p,
+            Resolution::HD1080p => Resolution::UHD4K,
+            Resolution::UHD4K => Resolution::Original,
+        };
+    }
+    
+    pub fn next_bitrate(&mut self) {
+        self.video_settings.bitrate = match self.video_settings.bitrate {
+            Bitrate::Auto => Bitrate::Low,
+            Bitrate::Low => Bitrate::Medium,
+            Bitrate::Medium => Bitrate::High,
+            Bitrate::High => Bitrate::Auto,
+        };
+    }
+    
+    pub fn next_framerate(&mut self) {
+        self.video_settings.frame_rate = match self.video_settings.frame_rate {
+            FrameRate::Original => FrameRate::FPS24,
+            FrameRate::FPS24 => FrameRate::FPS30,
+            FrameRate::FPS30 => FrameRate::FPS60,
+            FrameRate::FPS60 => FrameRate::Original,
+        };
+    }
+    
+    pub fn change_selected_setting(&mut self, increase: bool) {
+        match self.selected_setting {
+            AdvancedSetting::Resolution => {
+                if increase {
+                    self.next_resolution();
+                } else {
+                    // Previous resolution (cycle backwards)
+                    self.video_settings.resolution = match self.video_settings.resolution {
+                        Resolution::Original => Resolution::UHD4K,
+                        Resolution::HD720p => Resolution::Original,
+                        Resolution::HD1080p => Resolution::HD720p,
+                        Resolution::UHD4K => Resolution::HD1080p,
+                    };
+                }
+            },
+            AdvancedSetting::Bitrate => {
+                if increase {
+                    self.next_bitrate();
+                } else {
+                    // Previous bitrate (cycle backwards)
+                    self.video_settings.bitrate = match self.video_settings.bitrate {
+                        Bitrate::Auto => Bitrate::High,
+                        Bitrate::Low => Bitrate::Auto,
+                        Bitrate::Medium => Bitrate::Low,
+                        Bitrate::High => Bitrate::Medium,
+                    };
+                }
+            },
+            AdvancedSetting::FrameRate => {
+                if increase {
+                    self.next_framerate();
+                } else {
+                    // Previous framerate (cycle backwards)
+                    self.video_settings.frame_rate = match self.video_settings.frame_rate {
+                        FrameRate::Original => FrameRate::FPS60,
+                        FrameRate::FPS24 => FrameRate::Original,
+                        FrameRate::FPS30 => FrameRate::FPS24,
+                        FrameRate::FPS60 => FrameRate::FPS30,
+                    };
+                }
+            },
+        }
     }
 }

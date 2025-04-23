@@ -4,6 +4,104 @@ use std::thread;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Resolution {
+    Original,
+    HD720p,
+    HD1080p,
+    UHD4K,
+}
+
+impl Resolution {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Resolution::Original => "Original",
+            Resolution::HD720p => "720p",
+            Resolution::HD1080p => "1080p",
+            Resolution::UHD4K => "4K",
+        }
+    }
+    
+    pub fn dimensions(&self) -> Option<(u32, u32)> {
+        match self {
+            Resolution::Original => None,
+            Resolution::HD720p => Some((1280, 720)),
+            Resolution::HD1080p => Some((1920, 1080)),
+            Resolution::UHD4K => Some((3840, 2160)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Bitrate {
+    Auto,
+    Low,
+    Medium,
+    High,
+}
+
+impl Bitrate {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Bitrate::Auto => "Auto",
+            Bitrate::Low => "Low",
+            Bitrate::Medium => "Medium",
+            Bitrate::High => "High",
+        }
+    }
+    
+    pub fn value_kbps(&self, resolution: &Resolution) -> u32 {
+        match (self, resolution) {
+            (Bitrate::Auto, _) => 0, // Let the converter decide
+            (Bitrate::Low, Resolution::HD720p) => 1500,
+            (Bitrate::Medium, Resolution::HD720p) => 2500,
+            (Bitrate::High, Resolution::HD720p) => 4000,
+            (Bitrate::Low, Resolution::HD1080p) => 3000,
+            (Bitrate::Medium, Resolution::HD1080p) => 6000,
+            (Bitrate::High, Resolution::HD1080p) => 8000,
+            (Bitrate::Low, Resolution::UHD4K) => 8000,
+            (Bitrate::Medium, Resolution::UHD4K) => 12000,
+            (Bitrate::High, Resolution::UHD4K) => 18000,
+            _ => 6000, // Default medium quality for other combinations
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum FrameRate {
+    Original,
+    FPS24,
+    FPS30,
+    FPS60,
+}
+
+impl FrameRate {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            FrameRate::Original => "Original",
+            FrameRate::FPS24 => "24 fps",
+            FrameRate::FPS30 => "30 fps",
+            FrameRate::FPS60 => "60 fps",
+        }
+    }
+    
+    pub fn value(&self) -> Option<u32> {
+        match self {
+            FrameRate::Original => None,
+            FrameRate::FPS24 => Some(24),
+            FrameRate::FPS30 => Some(30),
+            FrameRate::FPS60 => Some(60),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct VideoSettings {
+    pub resolution: Resolution,
+    pub bitrate: Bitrate,
+    pub frame_rate: FrameRate,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum VideoFormat {
     MP4,
     MKV,
@@ -65,6 +163,7 @@ pub struct ConversionProgress {
     pub is_complete: bool,
     pub has_error: bool,
     pub error_message: Option<String>,
+    pub video_settings: Option<VideoSettings>,
 }
 
 pub enum ConversionMode {
@@ -90,6 +189,13 @@ impl VideoConverter {
         // Create output file path
         let output_file = Self::generate_output_path(&source_file, target_format);
         
+        // Default video settings
+        let default_settings = VideoSettings {
+            resolution: Resolution::Original,
+            bitrate: Bitrate::Auto,
+            frame_rate: FrameRate::Original,
+        };
+        
         // Send initial progress notification
         Self::send_progress(
             &progress_tx, 
@@ -100,7 +206,8 @@ impl VideoConverter {
             &output_file,
             false,
             false,
-            None
+            None,
+            Some(default_settings)
         );
         
         match self.mode {
@@ -122,7 +229,8 @@ impl VideoConverter {
                         &output_file,
                         false,
                         true,
-                        Some(format!("Native FFmpeg error: {}", e))
+                        Some(format!("Native FFmpeg error: {}", e)),
+                        None
                     );
                     // Fall back to simulation
                     self.simulate_conversion(source_file, target_format, output_file);
@@ -146,7 +254,8 @@ impl VideoConverter {
                                 &output_file,
                                 false,
                                 true,
-                                Some(format!("FFmpeg error: {}", e))
+                                Some(format!("FFmpeg error: {}", e)),
+                                None
                             );
                             // Fall back to simulation
                             self.simulate_conversion(source_file, target_format, output_file);
@@ -162,6 +271,7 @@ impl VideoConverter {
                             &output_file,
                             false,
                             false,
+                            None,
                             None
                         );
                         self.simulate_conversion(source_file, target_format, output_file);
@@ -170,14 +280,15 @@ impl VideoConverter {
                     // Error checking FFmpeg, fall back to simulation
                     Self::send_progress(
                         &progress_tx, 
-                        0, 
-                        "Error checking FFmpeg availability, using simulation mode".to_string(),
+                        0,
+                        "Error checking FFmpeg availability, using simulation mode".to_string(), 
                         &source_file,
                         target_format,
                         &output_file,
                         false,
                         false,
-                        None
+                        None,
+                        Some(default_settings)
                     );
                     self.simulate_conversion(source_file, target_format, output_file);
                 }
@@ -202,6 +313,7 @@ impl VideoConverter {
                 &output_file,
                 false,
                 false,
+                None,
                 None
             );
             thread::sleep(Duration::from_millis(500));
@@ -216,6 +328,7 @@ impl VideoConverter {
                 &output_file,
                 false,
                 false,
+                None,
                 None
             );
             thread::sleep(Duration::from_millis(1000));
@@ -231,6 +344,7 @@ impl VideoConverter {
                     &output_file,
                     false,
                     false,
+                    None,
                     None
                 );
                 thread::sleep(Duration::from_millis(100));
@@ -246,6 +360,7 @@ impl VideoConverter {
                 &output_file,
                 false,
                 false,
+                None,
                 None
             );
             thread::sleep(Duration::from_millis(500));
@@ -260,6 +375,7 @@ impl VideoConverter {
                 &output_file,
                 false,
                 false,
+                None,
                 None
             );
             thread::sleep(Duration::from_millis(300));
@@ -274,6 +390,7 @@ impl VideoConverter {
                 &output_file,
                 true,
                 false,
+                None,
                 None
             );
         });
@@ -289,6 +406,7 @@ impl VideoConverter {
         is_complete: bool,
         has_error: bool,
         error_message: Option<String>,
+        video_settings: Option<VideoSettings>,
     ) {
         let _ = tx.send(ConversionProgress {
             percent,
@@ -299,6 +417,7 @@ impl VideoConverter {
             is_complete,
             has_error,
             error_message,
+            video_settings,
         });
     }
     

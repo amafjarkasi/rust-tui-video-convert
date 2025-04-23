@@ -306,6 +306,7 @@ impl FFmpegConverter {
             is_complete,
             has_error,
             error_message,
+            video_settings: None,
         });
     }
 }
